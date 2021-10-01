@@ -1,46 +1,40 @@
 package com.example.demo.task.controller;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+
+import com.example.demo.task.error.SearchTaskNoResultException;
 import com.example.demo.task.error.TaskNotFoundException;
 import com.example.demo.task.model.TaskEntity;
 import com.example.demo.task.model.TaskRepository;
+import com.example.demo.task.service.TaskService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api")
 public class TaskController {
 
     @Autowired
+    TaskService taskService;
+
+    @Autowired
     TaskRepository taskRepository;
 
-    /**
-     * Get all tasks
-     *
-     * @return 404 with no tasks, otherwise 200 and the list of tasks
-     */
-    @GetMapping("/task")
-    public ResponseEntity<?> getAllTasks() {
-        List<TaskEntity> result = taskRepository.findAll();
-
-        if (result.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No tasks registered");
-        } else {
-            return ResponseEntity.ok(result);
+    private Sort.Direction getSortDirection(String direction) {
+        if (direction.equals("asc")) {
+            return Sort.Direction.ASC;
+        } else if (direction.equals("desc")) {
+            return Sort.Direction.DESC;
         }
-
+        return Sort.Direction.ASC;
     }
 
     /**
@@ -99,6 +93,29 @@ public class TaskController {
 
         taskRepository.delete(task);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping(value = "/task")
+    public ResponseEntity<?> searchTasksByParams(
+            @RequestParam("priority") Optional<Integer> priority,
+            @RequestParam("completed") Optional<Boolean> completed,
+            @RequestParam(defaultValue = "id,desc") String sort) {
+
+        List<Order> orders = new ArrayList<>();
+
+        if (sort.contains(",")) {
+            String[] s_slide = sort.split(",");
+            orders.add(new Order(getSortDirection(s_slide[1]), s_slide[0]));
+        }
+
+        List<TaskEntity> result = taskService.findByParamsOrderedBy(priority, completed, Sort.by(orders));
+
+        if (result.isEmpty()) {
+            throw new SearchTaskNoResultException();
+        } else {
+            return ResponseEntity.ok(result);
+        }
+
     }
 
 }
