@@ -1,9 +1,12 @@
 package com.example.demo.task.model;
 
 import com.example.demo.task.TaskPriority;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity(name = "TaskEntity")
 @Table(name = "TASKS")
@@ -41,6 +44,10 @@ public class TaskEntity {
 
     @Column(name = "CREATION_DATE")
     private LocalDateTime creationDate;
+
+    @JsonManagedReference
+    @OneToMany(mappedBy="task", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<SubtaskEntity> subtasks = new ArrayList<>();
 
     public TaskEntity(Long id, String description, boolean completed, TaskPriority priority, LocalDateTime creationDate) {
         this.id = id;

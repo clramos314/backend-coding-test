@@ -1,5 +1,7 @@
 package com.example.demo.task.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import javax.persistence.*;
 import java.time.LocalDateTime;
 
@@ -20,7 +22,9 @@ public class SubtaskEntity{
     @Column(name = "END_DATE")
     private LocalDateTime endDate;
 
-    @ManyToOne(optional = false, cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JsonBackReference
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_task")
     private TaskEntity task;
 
     public SubtaskEntity(Long id, String description, LocalDateTime startDate, LocalDateTime endDate) {
